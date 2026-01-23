@@ -1,0 +1,17 @@
+root = true
+
+# Default to your preference (matches your nvim config)
+[*]
+indent_style = space
+indent_size = 2
+end_of_line = lf
+trim_trailing_whitespace = true
+insert_final_newline = true
+
+# Force Python/Django to 4 spaces
+[*.py]
+indent_size = 4
+
+# Django Templates / HTML (Keep 2 spaces, it's cleaner for HTML)
+[*.{html,css,js,json}]
+indent_size = 2
