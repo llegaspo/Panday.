@@ -1,6 +1,8 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
-from datetime import date
+from datetime import date, timedelta
+from django.db.models.fields import TimeField
+from django.utils import timezone
 
 
 class Region(models.Model):
@@ -91,6 +93,10 @@ class User(AbstractUser):
             age -= 1
         return age
 
+    class Meta:
+        db_table = "USER"
+        verbose_name = "User"
+
 
 class UserAddress(models.Model):
     id = models.AutoField(primary_key=True)
@@ -105,3 +111,49 @@ class UserAddress(models.Model):
     latitude = models.DecimalField(max_digits=5, decimal_places=2, default=0.0)
     longitude = models.DecimalField(max_digits=5, decimal_places=2, default=0.0)
     is_primary = models.BooleanField(default=True)
+
+    class Meta:
+        db_table = "ADDRESS"
+        verbose_name = "Address"
+        verbose_name_plural = "Addresses"
+
+
+def get_otp_expiry_time():
+    return (timezone.now() + timedelta(minutes=5)).time()
+
+
+class OTPVerification(models.Model):
+    id = models.AutoField(primary_key=True)
+    user_id = models.ForeignKey(User, on_delete=models.CASCADE)
+    code = models.CharField(max_length=6)
+    purpose = models.CharField(max_length=100)
+    expires_at = models.TimeField(default=get_otp_expiry_time)
+    verified_at = models, TimeField(auto_now=True)
+
+    class Meta:
+        db_table = "OTP"
+        verbose_name = "OTP"
+
+
+class UserDevice(models.Model):
+    id = models.AutoField(primary_key=True)
+    user_id = models.ForeignKey(User, on_delete=models.CASCADE)
+    device_token = models.CharField(max_length=20)
+    platform = models.CharField(max_length=10)
+    last_seen_at = models.TimeField(auto_now=True)
+
+    class Meta:
+        db_table = "USER_DEVICE"
+        verbose_name = "Device"
+
+
+class UserTrustLevel(models.Model):
+    id = models.AutoField(primary_key=True)
+    user_id = models.OneToOneField(User, on_delete=models.CASCADE)
+    level = models.CharField(max_length=10)
+    score = models.DecimalField(max_digits=3, decimal_places=2, default=0.0)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "TRUST_LEVEL"
+        verbose_name = "Trust Level"
