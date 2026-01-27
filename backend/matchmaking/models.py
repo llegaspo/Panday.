@@ -1,70 +1,136 @@
 import uuid
 from django.db import models
 from django.conf import settings
+from django.contrib.postgres.fields import ArrayField  # Requires Postgres
+from pgvector.django import VectorField  # Requires pgvector extension
 
 
-class Trip(models.Model):
+class JobPosting(models.Model):
+    class PricingType(models.TextChoices):
+        FIXED = "FIXED", "Fixed Price"
+        HOURLY = "HOURLY", "Hourly Rate"
+        ESTIMATE = "ESTIMATE", "Estimate"
+
     class Status(models.TextChoices):
-        EN_ROUTE = "EN_ROUTE", "En Route"
-        ARRIVED = "ARRIVED", "Arrived"
-        WORKING = "WORKING", "Working"
-        COMPLETED = "COMPLETED", "Completed"
+        DRAFT = "DRAFT", "Draft"
+        OPEN = "OPEN", "Open"
+        IN_PROGRESS = "IN_PROGRESS", "In Progress"
+        FILLED = "FILLED", "Filled"
         CANCELLED = "CANCELLED", "Cancelled"
 
-    trip_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    booking = models.ForeignKey(
-        "Booking", on_delete=models.CASCADE, related_name="trips"
-    )
+    posting_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
 
     client = models.ForeignKey(
-        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="client_trips"
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="job_postings"
     )
-    worker = models.ForeignKey(
-        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="worker_trips"
+
+    description = models.TextField()
+    problem_embedding = VectorField(dimensions=1536, null=True, blank=True)
+    image_embedding = VectorField(dimensions=1536, null=True, blank=True)
+    media_urls = ArrayField(models.CharField(max_length=500), blank=True, default=list)
+
+    requested_worker_count = models.IntegerField(default=1)
+    max_acceptances = models.IntegerField(default=1)
+
+    pricing_type = models.CharField(max_length=20, choices=PricingType.choices)
+    min_budget = models.DecimalField(
+        max_digits=12, decimal_places=2, null=True, blank=True
+    )
+    max_budget = models.DecimalField(
+        max_digits=12, decimal_places=2, null=True, blank=True
+    )
+
+    estimated_duration_hours = models.IntegerField(null=True, blank=True)
+    consultation_required = models.BooleanField(default=False)
+    location_lat = models.DecimalField(
+        max_digits=9, decimal_places=6, null=True, blank=True
+    )
+    location_long = models.DecimalField(
+        max_digits=9, decimal_places=6, null=True, blank=True
     )
 
     status = models.CharField(
-        max_length=20, choices=Status.choices, default=Status.EN_ROUTE
+        max_length=20, choices=Status.choices, default=Status.DRAFT
     )
-    started_at = models.DateTimeField(null=True, blank=True)
-    ended_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        db_table = "TRIPS"
-        verbose_name = "Trip"
-        indexes = [
-            models.Index(fields=["status"]),
-        ]
+        db_table = "JOB_POSTINGS"
+        verbose_name = "Job Posting"
 
     def __str__(self):
-        return f"Trip {self.trip_id} ({self.status})"
+        return f"Job {self.posting_id} ({self.status})"
 
 
-class LiveLocation(models.Model):
-    location_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+class JobMediaAnalysis(models.Model):
+    class MediaType(models.TextChoices):
+        IMAGE = "IMAGE", "Image"
+        VIDEO = "VIDEO", "Video"
 
-    trip = models.ForeignKey(Trip, on_delete=models.CASCADE, related_name="locations")
-    user = models.ForeignKey(
+    analysis_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+
+    posting = models.ForeignKey(
+        JobPosting, on_delete=models.CASCADE, related_name="media_analyses"
+    )
+
+    media_url = models.CharField(max_length=500)
+    media_type = models.CharField(max_length=10, choices=MediaType.choices)
+    image_embedding = VectorField(dimensions=1536, null=True, blank=True)
+    video_embedding = VectorField(dimensions=1536, null=True, blank=True)
+    detected_objects = models.JSONField(default=dict, blank=True)
+    detected_issues = models.JSONField(default=dict, blank=True)
+
+    class Meta:
+        db_table = "JOB_MEDIA_ANALYSIS"
+
+
+class AIDecision(models.Model):
+    decision_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    context_type = models.CharField(max_length=50)
+    context_id = models.UUIDField()
+    input_data = models.JSONField()
+    output_data = models.JSONField()
+    model_version = models.CharField(max_length=50)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "AI_DECISIONS"
+        verbose_name = "AI Decision"
+        indexes = [
+            models.Index(fields=["context_type", "context_id"]),
+        ]
+
+
+class JobBroadcast(models.Model):
+    class BroadcastStatus(models.TextChoices):
+        SENT = "SENT", "Sent"
+        SEEN = "SEEN", "Seen"
+        APPLIED = "APPLIED", "Applied"
+        DECLINED = "DECLINED", "Declined"
+        EXPIRED = "EXPIRED", "Expired"
+
+    broadcast_id = models.UUIDField(
+        primary_key=True, default=uuid.uuid4, editable=False
+    )
+
+    posting = models.ForeignKey(
+        JobPosting, on_delete=models.CASCADE, related_name="broadcasts"
+    )
+
+    worker = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
-        related_name="location_history",
+        related_name="job_broadcasts",
     )
 
-    latitude = models.DecimalField(max_digits=9, decimal_places=6)
-    longitude = models.DecimalField(max_digits=9, decimal_places=6)
-    accuracy_m = models.DecimalField(
-        max_digits=6, decimal_places=2, null=True, blank=True
-    )
+    match_score = models.DecimalField(max_digits=5, decimal_places=4)  # e.g., 0.9856
 
-    recorded_at = models.DateTimeField(auto_now_add=True)
+    status = models.CharField(
+        max_length=20, choices=BroadcastStatus.choices, default=BroadcastStatus.SENT
+    )
+    responded_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
-        db_table = "LIVE_LOCATIONS"
-        verboce_name = "Live Location"
-        ordering = ["-recorded_at"]
-        indexes = [
-            models.Index(fields=["trip", "recorded_at"]),
-        ]
-
-    def __str__(self):
-        return f"{self.user} at {self.recorded_at}"
+        db_table = "JOB_BROADCASTS"
+        verbose_name = "Job Broadcast"
+        unique_together = ("posting", "worker")
