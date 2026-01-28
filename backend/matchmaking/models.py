@@ -18,7 +18,7 @@ class JobPosting(models.Model):
         FILLED = "FILLED", "Filled"
         CANCELLED = "CANCELLED", "Cancelled"
 
-    posting_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
 
     client = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="job_postings"
@@ -59,7 +59,7 @@ class JobPosting(models.Model):
         verbose_name = "Job Posting"
 
     def __str__(self):
-        return f"Job {self.posting_id} ({self.status})"
+        return f"Job {self.id} ({self.status})"
 
 
 class JobMediaAnalysis(models.Model):
@@ -67,7 +67,7 @@ class JobMediaAnalysis(models.Model):
         IMAGE = "IMAGE", "Image"
         VIDEO = "VIDEO", "Video"
 
-    analysis_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
 
     posting = models.ForeignKey(
         JobPosting, on_delete=models.CASCADE, related_name="media_analyses"
@@ -85,7 +85,7 @@ class JobMediaAnalysis(models.Model):
 
 
 class AIDecision(models.Model):
-    decision_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     context_type = models.CharField(max_length=50)
     context_id = models.UUIDField()
     input_data = models.JSONField()
@@ -109,9 +109,7 @@ class JobBroadcast(models.Model):
         DECLINED = "DECLINED", "Declined"
         EXPIRED = "EXPIRED", "Expired"
 
-    broadcast_id = models.UUIDField(
-        primary_key=True, default=uuid.uuid4, editable=False
-    )
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
 
     posting = models.ForeignKey(
         JobPosting, on_delete=models.CASCADE, related_name="broadcasts"

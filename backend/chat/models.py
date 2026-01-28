@@ -4,7 +4,7 @@ from django.conf import settings
 
 
 class ChatChannel(models.Model):
-    channel_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     context_type = models.CharField(max_length=255)
     context_id = models.UUIDField()
     created_at = models.DateTimeField(auto_now_add=True)
@@ -21,7 +21,7 @@ class ChatChannel(models.Model):
 
 
 class ChatMessage(models.Model):
-    message_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     channel = models.ForeignKey(
         ChatChannel, on_delete=models.CASCADE, related_name="messages"
     )
@@ -42,23 +42,22 @@ class ChatMessage(models.Model):
         ordering = ["sent_at"]
 
     def __str__(self):
-        return f"Message {self.message_id} in {self.channel}"
+        return f"Message {self.id} in {self.channel}"
 
 
 class Notification(models.Model):
-    notification_id = models.UUIDField(
-        primary_key=True, default=uuid.uuid4, editable=False
-    )
-    user_id = models.ForeignKey(
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="notifications"
     )
     type = models.CharField(max_length=100)
     payload = models.TextField()
     is_read = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
+
     class Meta:
         db_table = "NOTIFICATIONS"
-        verbose_name "Notification"
+        verbose_name = "Notification"
         ordering = ["-created_at"]
 
     def __str__(self):
