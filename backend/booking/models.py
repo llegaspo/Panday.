@@ -18,9 +18,12 @@ class Booking(models.Model):
         FIXED = "FIXED", "Fixed Price"
         HOURLY = "HOURLY", "Hourly Rate"
 
-    booking_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    posting = models.ForeignKey(
-        "JobPosting", on_delete=models.SET_NULL, null=True, related_name="bookings"
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    posting = models.OneToOneField(
+        "matchmaking.JobPosting",
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name="bookings",
     )
     client = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -43,44 +46,11 @@ class Booking(models.Model):
         ordering = ["-start_time"]
 
     def __str__(self):
-        return f"Booking {self.booking_id} - {self.status}"
-
-
-class JobAssignment(models.Model):
-    assignment_id = models.UUIDField(
-        primary_key=True, default=uuid.uuid4, editable=False
-    )
-    posting = models.ForeignKey(
-        "JobPosting", on_delete=models.CASCADE, related_name="assignments"
-    )
-    worker = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.CASCADE,
-        related_name="job_assignments",
-    )
-    booking = models.ForeignKey(
-        Booking,
-        on_delete=models.CASCADE,
-        related_name="assignments",
-        null=True,
-        blank=True,
-    )
-    role = models.CharField(max_length=100)
-    agreed_rate = models.DecimalField(max_digits=10, decimal_places=2)
-    status = models.CharField(max_length=50, default="PENDING")
-
-    class Meta:
-        db_table = "JOB_ASSIGNMENTS"
-        verbose_name = "Job Assignment"
-
-    def __str__(self):
-        return f"{self.worker} assigned to {self.posting}"
+        return f"Booking {self.id} - {self.status}"
 
 
 class BookingParticipant(models.Model):
-    participant_id = models.UUIDField(
-        primary_key=True, default=uuid.uuid4, editable=False
-    )
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     booking = models.ForeignKey(
         Booking, on_delete=models.CASCADE, related_name="participants"
     )
@@ -102,9 +72,7 @@ class BookingParticipant(models.Model):
 
 
 class BookingMilestone(models.Model):
-    milestone_id = models.UUIDField(
-        primary_key=True, default=uuid.uuid4, editable=False
-    )
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     booking = models.ForeignKey(
         Booking, on_delete=models.CASCADE, related_name="milestones"
     )
@@ -119,7 +87,7 @@ class BookingMilestone(models.Model):
 
 
 class Dispute(models.Model):
-    dispute_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     booking = models.ForeignKey(
         Booking, on_delete=models.CASCADE, related_name="disputes"
     )
@@ -140,7 +108,7 @@ class Dispute(models.Model):
 
 
 class Review(models.Model):
-    review_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     booking = models.ForeignKey(
         Booking, on_delete=models.CASCADE, related_name="reviews"
     )

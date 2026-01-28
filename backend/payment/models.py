@@ -5,7 +5,7 @@ from django.db.models import Sum
 
 
 class Wallet(models.Model):
-    wallet_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
 
     user = models.OneToOneField(
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="wallet"
@@ -42,9 +42,7 @@ class Transaction(models.Model):
         WITHDRAWAL = "WITHDRAWAL", "Withdrawal"
         TOP_UP = "TOP_UP", "Top Up"
 
-    transaction_id = models.UUIDField(
-        primary_key=True, default=uuid.uuid4, editable=False
-    )
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
 
     source_wallet = models.ForeignKey(
         Wallet,

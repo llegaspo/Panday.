@@ -11,7 +11,7 @@ class Trip(models.Model):
         COMPLETED = "COMPLETED", "Completed"
         CANCELLED = "CANCELLED", "Cancelled"
 
-    trip_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     booking = models.ForeignKey(
         "Booking", on_delete=models.CASCADE, related_name="trips"
     )
@@ -37,12 +37,11 @@ class Trip(models.Model):
         ]
 
     def __str__(self):
-        return f"Trip {self.trip_id} ({self.status})"
+        return f"Trip {self.id} ({self.status})"
 
 
 class LiveLocation(models.Model):
-    location_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     trip = models.ForeignKey(Trip, on_delete=models.CASCADE, related_name="locations")
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
